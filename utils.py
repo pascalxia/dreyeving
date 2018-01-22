@@ -122,12 +122,14 @@ def predict_video(model, folder_in, frame_list, output_path, mean_frame_path):
         frame_queue.append(frame.astype(np.float32) - mean_frame)
     print 'Done loading frames.'
     
-    
+    #prepare output path
+    if not os.path.isdir(output_path):
+      os.makedirs(output_path)
     
     # start of prediction
     for i in tqdm(range(t, len(frame_list))):
         
-        sys.stdout.write('\r{0}: predicting on frame {1:06d}...'.format(folder_in, i))
+        sys.stdout.write('\r{0}: predicting on frame {1}...'.format(folder_in, frame_list[i]))
 
         # loading videoclip of t frames
         x = np.array(frame_queue)
@@ -148,7 +150,7 @@ def predict_video(model, folder_in, frame_list, output_path, mean_frame_path):
         res_norm = ((res / res.max()) * 255).astype(np.uint8)
         res_norm = np.reshape(res_norm, (h*upsample,w*upsample))
         
-        cv2.imwrite(join(output_path, '{0:06d}.png'.format(i)), res_norm)
+        cv2.imwrite(join(output_path, frame_list[i]), res_norm)
         
         frame_queue.popleft()
         frame_name = frame_list[i]
