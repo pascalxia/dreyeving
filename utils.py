@@ -94,12 +94,26 @@ def getCoarse2FineModel(summary=True):
 
     return final_model
 
-
-def predict_video(model, folder_in, output_path, mean_frame_path):
-
+def predict_folder(model, folder_in, output_path, mean_frame_path):
     # load frames to predict
     frames = []
     frame_list = os.listdir(folder_in)
+    if '_' in frame_list[0]:
+        video_set = set([f.split('_')[0] for f in frame_list])
+        for video in video_set:
+            sub_list = [f for f in frame_list if f.startswith(video)]
+            sub_list.sort()
+            predict_video(model, folder_in, sub_list, output_path, mean_frame_path)
+    else:
+        frame_list.sort()
+        predict_video(model, folder_in, frame_list, output_path, mean_frame_path)
+  
+    
+
+def predict_video(model, folder_in, frame_list, output_path, mean_frame_path):
+
+    # load frames to predict
+    frames = []
     mean_frame = cv2.imread(mean_frame_path)
     for frame_name in frame_list:
         frame = cv2.imread(join(folder_in, frame_name))
