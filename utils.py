@@ -9,6 +9,7 @@ from os.path import join
 import sys
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 # parameters (no need to edit)
 t, c, w, h = 16, 3, 112, 112
@@ -105,10 +106,10 @@ def predict_video(model, folder_in, output_path, mean_frame_path):
         frame = cv2.imread(join(folder_in, frame_name))
         frames.append(frame.astype(np.float32) - mean_frame)
     print 'Done loading frames.'
-
+    
     # start of prediction
-    for i in range(t, len(frames)):
-
+    for i in tqdm(range(t, len(frames))):
+        
         sys.stdout.write('\r{0}: predicting on frame {1:06d}...'.format(folder_in, i))
 
         # loading videoclip of t frames
@@ -121,7 +122,6 @@ def predict_video(model, folder_in, output_path, mean_frame_path):
         x = np.array([cv2.resize(f, (h, w)) for f in x])
         x = x[None, :]
         x = x.transpose(0, 4, 1, 2, 3).astype(np.float32)
-
         # predict attentional map on last frame of the videoclip
         res = model.predict_on_batch([x, x, x_last_bigger])
         res = res[1]  # keep only fine output
