@@ -10,6 +10,8 @@ import sys
 import cv2
 import numpy as np
 from tqdm import tqdm
+import pdb
+from collections import deque
 
 # parameters (no need to edit)
 t, c, w, h = 16, 3, 112, 112
@@ -113,20 +115,22 @@ def predict_folder(model, folder_in, output_path, mean_frame_path):
 def predict_video(model, folder_in, frame_list, output_path, mean_frame_path):
 
     # load frames to predict
-    frames = []
+    frame_queue = deque([])
     mean_frame = cv2.imread(mean_frame_path)
-    for frame_name in frame_list:
+    for frame_name in frame_list[:t]:
         frame = cv2.imread(join(folder_in, frame_name))
-        frames.append(frame.astype(np.float32) - mean_frame)
+        frame_queue.append(frame.astype(np.float32) - mean_frame)
     print 'Done loading frames.'
     
+    
+    
     # start of prediction
-    for i in tqdm(range(t, len(frames))):
+    for i in tqdm(range(t, len(frame_list))):
         
         sys.stdout.write('\r{0}: predicting on frame {1:06d}...'.format(folder_in, i))
 
         # loading videoclip of t frames
-        x = np.array(frames[i - t: i])
+        x = np.array(frame_queue)
 
         x_last_bigger = cv2.resize(x[-1, :, :, :], (h*upsample,w*upsample))
         x_last_bigger = x_last_bigger.transpose(2, 0, 1)
@@ -143,5 +147,10 @@ def predict_video(model, folder_in, frame_list, output_path, mean_frame_path):
         # normalize attentional map between 0 and 1
         res_norm = ((res / res.max()) * 255).astype(np.uint8)
         res_norm = np.reshape(res_norm, (h*upsample,w*upsample))
-
+        
         cv2.imwrite(join(output_path, '{0:06d}.png'.format(i)), res_norm)
+        
+        frame_queue.popleft()
+        frame_name = frame_list[i]
+        frame = cv2.imread(join(folder_in, frame_name))
+        frame_queue.append(frame.astype(np.float32) - mean_frame)
