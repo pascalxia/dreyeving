@@ -3,9 +3,9 @@ from keras.optimizers import Adam
 
 if __name__ == '__main__':
 
-    output_dir_root = 'out'
+    output_dir_root = 'out_for_bdd'
     weights_file = 'weights/model_weights.h5'
-    dreyeve_data_dir = 'data_sample/54'
+    dreyeve_data_dir = '/data/validation/camera_images'
 
     # load model for prediction
     model = getCoarse2FineModel(summary=True)
