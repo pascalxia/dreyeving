@@ -92,7 +92,7 @@ def getCoarse2FineModel(summary=True):
                         output=[cropped_output, full_fine_output])
 
     if summary:
-        print final_model.summary()
+        print(final_model.summary())
 
     return final_model
 
