@@ -97,6 +97,10 @@ def getCoarse2FineModel(summary=True):
     return final_model
 
 def predict_folder(model, folder_in, output_path, mean_frame_path):
+    #parameters
+    sample_rate = 3
+    frame_rate = 25
+    
     # load frames to predict
     frames = []
     frame_list = os.listdir(folder_in)
@@ -105,34 +109,41 @@ def predict_folder(model, folder_in, output_path, mean_frame_path):
         for video in video_set:
             sub_list = [f for f in frame_list if f.startswith(video)]
             sub_list.sort()
-            predict_video(model, folder_in, sub_list, output_path, mean_frame_path)
+            #get sampled frames
+            end_time = int(sub_list[-1].split('_')[1].split('.')[0]) + 1
+            suffix = sub_list[0].split('.')[1]
+            sample_times = np.arange(0, end_time, 1000.0/sample_rate).astype(int)
+            sample_index = (np.around(sample_times/(1000.0/frame_rate))).astype(int)
+            
+            predict_video(model, folder_in, sub_list, sample_index, output_path, mean_frame_path)
     else:
         frame_list.sort()
-        predict_video(model, folder_in, frame_list, output_path, mean_frame_path)
+        predict_video(model, folder_in, frame_list, np.arange(len(frame_list)), output_path, mean_frame_path)
   
     
 
-def predict_video(model, folder_in, frame_list, output_path, mean_frame_path):
+def predict_video(model, folder_in, frame_list, sample_index, output_path, mean_frame_path):
 
-    # load frames to predict
-    frame_queue = deque([])
     mean_frame = cv2.imread(mean_frame_path)
-    for frame_name in frame_list[:t]:
-        frame = cv2.imread(join(folder_in, frame_name))
-        frame_queue.append(frame.astype(np.float32) - mean_frame)
-    print 'Done loading frames.'
     
     #prepare output path
     if not os.path.isdir(output_path):
       os.makedirs(output_path)
     
     # start of prediction
-    for i in tqdm(range(t, len(frame_list))):
+    for i in tqdm(sample_index):
+        if i < t:
+            continue
+        # loading videoclip of t frames
+        frames = []
+        for frame_name in frame_list[i-t:i]:
+            frame = cv2.imread(join(folder_in, frame_name))
+            frames.append(frame.astype(np.float32) - mean_frame)
         
         sys.stdout.write('\r{0}: predicting on frame {1}...'.format(folder_in, frame_list[i]))
 
-        # loading videoclip of t frames
-        x = np.array(frame_queue)
+        # convert to array
+        x = np.array(frames)
 
         x_last_bigger = cv2.resize(x[-1, :, :, :], (h*upsample,w*upsample))
         x_last_bigger = x_last_bigger.transpose(2, 0, 1)
@@ -152,7 +163,3 @@ def predict_video(model, folder_in, frame_list, output_path, mean_frame_path):
         
         cv2.imwrite(join(output_path, frame_list[i]), res_norm)
         
-        frame_queue.popleft()
-        frame_name = frame_list[i]
-        frame = cv2.imread(join(folder_in, frame_name))
-        frame_queue.append(frame.astype(np.float32) - mean_frame)
