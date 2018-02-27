@@ -1,11 +1,14 @@
 from utils import getCoarse2FineModel, predict_folder
 from keras.optimizers import Adam
+import pdb
+
 
 if __name__ == '__main__':
 
-    output_dir_root = 'out'
+    output_dir_root = 'out_test'
     #output_dir_root = 'out_for_bdd'
-    weights_file = 'weights/model_weights.h5'
+    #weights_file = 'weights/model_weights.h5'
+    weights_file = 'logs/run0/weights_iter_0.h5'
     dreyeve_data_dir = 'data_sample/54'
     #dreyeve_data_dir = '/data/validation/camera_images'
 
@@ -18,6 +21,9 @@ if __name__ == '__main__':
 
     # load pre-trained weights
     model.load_weights(weights_file)
+
+    pdb.set_trace()
+
 
     # predict on sample data (first 200 frames of run 54 from DR(eye)VE
     predict_folder(model, dreyeve_data_dir,
