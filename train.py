@@ -63,9 +63,9 @@ if not os.path.isdir(args.logs_dir):
   os.makedirs(args.logs_dir)
 model.save(args.logs_dir+'dreyeving_tf.h5')
 
-if True:
+#if True:
     #pdb.set_trace()
-    model.load_weights('logs/run0/weights_iter_0.h5')
+    #model.load_weights('logs/run0/weights_iter_0.h5')
 
 #set up summaries----------
 #quick summaries
