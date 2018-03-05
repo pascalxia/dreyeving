@@ -38,12 +38,15 @@ if __name__ == '__main__':
     model.load_weights(weights_file)
     
     # make a test model-------------------
-    videoclip_cropped = Input((t, h, w, c), name='test_input1')
-    test_layer = model.get_layer('sequential_1').get_layer('conv1')
+    #videoclip_cropped = Input((t, h, w, c), name='test_input1')
+    start_layer = model.get_layer('sequential_1').get_layer('conv1')
+    #test_layer = model.get_layer('sequential_1').get_layer('batch_normalization_1')
+    test_layer = model.get_layer('sequential_1').get_layer('reshape_1')
     
     pdb.set_trace()
     
-    test_model = Model(input=videoclip_cropped, output=test_layer(videoclip_cropped))
+    #test_model = Model(input=videoclip_cropped, output=test_layer(videoclip_cropped))
+    test_model = Model(input=start_layer.input, output=test_layer.output)
 
 
     folder_in = dreyeve_data_dir
