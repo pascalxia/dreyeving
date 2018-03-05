@@ -37,11 +37,11 @@ if __name__ == '__main__':
     # load pre-trained weights
     model.load_weights(weights_file)
     
-    pdb.set_trace()
-    
     # make a test model-------------------
     videoclip_cropped = Input((t, h, w, c), name='test_input1')
     test_layer = model.get_layer('sequential_1').get_layer('conv1')
+    
+    pdb.set_trace()
     
     test_model = Model(input=videoclip_cropped, output=test_layer(videoclip_cropped))
 
