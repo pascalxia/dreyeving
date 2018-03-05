@@ -5,7 +5,7 @@ import pdb
 
 if __name__ == '__main__':
 
-    output_dir_root = 'out_test'
+    output_dir_root = 'out_tf/54/'
     #output_dir_root = 'out_for_bdd'
     #weights_file = 'weights/model_weights.h5'
     weights_file = 'logs/run0/weights_iter_0.h5'
