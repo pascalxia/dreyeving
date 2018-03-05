@@ -37,6 +37,7 @@ def send_weights(name, obj):
             #weights = convert_kernel(weights)
         #f_new[name][...] = weights.transpose(np.arange(weights.ndim)[::-1])
         
+        # convert convolutoin kernels
         if weights.ndim==5:
             weights = weights.transpose([2,3,4,1,0])
             indices = [slice(None, None, -1)]*3 + [slice(None, None)]*2
@@ -45,6 +46,11 @@ def send_weights(name, obj):
             weights = weights.transpose([2,3,1,0])
             indices = [slice(None, None, -1)]*2 + [slice(None, None)]*2
             weights = weights[indices]
+            
+        #convert std to variance for batch normalization
+        if name.endswith('/moving_variance:0'):
+            weights = np.square(weights)
+        
         f_new[name][...] = weights
         
         
