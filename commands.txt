@@ -1,0 +1,7 @@
+# testing the output of a particular layer
+
+#for old version
+root-docker dreyeve test_output_old.py
+
+#for new version
+user-docker tf130_keras test_output_new.py
