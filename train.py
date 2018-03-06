@@ -25,6 +25,7 @@ ut.add_args_for_inference(parser)
 ut.add_args_for_training(parser)
 ut.add_args_for_feature(parser)
 ut.add_args_for_lstm(parser)
+ut.add_args_for_evaluation(parser)
 
 
 args = parser.parse_args()
@@ -63,9 +64,13 @@ if not os.path.isdir(args.logs_dir):
   os.makedirs(args.logs_dir)
 model.save(args.logs_dir+'dreyeving_tf.h5')
 
-#if True:
-    #pdb.set_trace()
-    #model.load_weights('logs/run0/weights_iter_0.h5')
+    
+#try to reload weights--------------------
+if args.model_dir is not None:
+    weight_path = args.model_dir + 'weights_iter_' + args.model_iteration + '.h5'
+    model.load_weights(weight_path)
+    print("Model restored...")
+    
 
 #set up summaries----------
 #quick summaries
@@ -186,9 +191,18 @@ def prepare_data(input_images_in_seqs, annotations_in_seqs, mean_frame):
     #annotations_in_seqs.shape = (?,16,448,448,1)
     #mean_frame.shape = (448,448,3)
     
-    x_full = np.array([[cv2.resize(f - mean_frame, (h, w)) for f in seq] for seq in input_images_in_seqs])
-    x_cropped = np.array([[(f-mean_frame)[224:336, 224:336] for f in seq] for seq in input_images_in_seqs])
-    x_last_bigger = np.array([cv2.resize(seq[-1], (4*h, 4*w)) for seq in x_full])
+    x_raw = np.array([[f.astype(np.float32) - mean_frame for f in seq] for seq in input_images_in_seqs])
+    x_full = np.array([[cv2.resize(f, (h, w)) for f in seq] for seq in x_raw])
+    x_cropped = np.array([[f[168:280, 168:280] for f in seq] for seq in x_raw])
+    x_last_bigger = np.array([seq[-1] for seq in x_raw])
+    
+    
+    #x_full = np.array([[cv2.resize(f.astype(np.float32) - mean_frame, (h, w)) for f in seq] for seq in input_images_in_seqs])
+    #x_cropped = np.array([[(f.astype(np.float32)-mean_frame)[168:280, 168:280] for f in seq] for seq in input_images_in_seqs])
+    #x_last_bigger = np.array([cv2.resize(seq[-1], (4*h, 4*w)) for seq in x_full])
+    
+    #x_last_bigger = np.array([cv2.resize(seq[-1].astype(np.float32) - mean_frame, (4*h, 4*w)) for seq in input_images_in_seqs])
+    
     #x_full.shape = (?, 16, 112, 112, 3)
     #x_cropped.shape = (?, 16, 112, 112, 3)
     #x_last_bigger.shape = (?, 448, 448, 3)
@@ -207,7 +221,7 @@ def prepare_data(input_images_in_seqs, annotations_in_seqs, mean_frame):
             temp[i] = ((y/y.max())*255).astype(np.uint8)
     y_full = temp
     
-    y_cropped = y_full[:, 224:336, 224:336]
+    y_cropped = y_full[:, 168:280, 168:280]
     #y_full.shape = (?, 448, 448)
     #y_cropped.shape = (?, 112, 112)
     
@@ -252,21 +266,22 @@ for itr in range(args.max_iteration):
         prepare_data(train_input_images_in_seqs, train_annotations_in_seqs, mean_frame)
     
     #do one step training
-    losses = model.train_on_batch([x_cropped, x_full, x_last_bigger], [y_cropped, y_full])
-    #print(res)
+    loss = model.train_on_batch([x_cropped, x_full, x_last_bigger], [y_cropped, y_full])[0]
+    
     
     #do summaries
     if itr % args.quick_summary_period == 0:
-        feed_dict = {training_loss: np.mean(losses)}
+        feed_dict = {training_loss: loss}
         summary_str = sess.run(quick_summary_op,
                                feed_dict=feed_dict)
         summary_writer.add_summary(summary_str, itr)
-        print("Step: %d, Train_loss:%g" % (itr, np.mean(losses)))
+        print("Step: %d, Train_loss:%g" % (itr, loss))
         
     if itr % args.slow_summary_period == 0:
         res = model.predict_on_batch([x_cropped, x_full, x_last_bigger])
         train_pred_images = y2img(res[1])
-        train_gazemaps = y2img(train_annotations_in_seqs.reshape(-1, 448*448))
+        #train_gazemaps = y2img(train_annotations_in_seqs.reshape(-1, 448*448))
+        train_gazemaps = y2img(y_full)
         
         feed_dict = {
             input_images: [misc.imresize(img, args.display_size) for img in train_input_images_in_seqs.reshape((-1, 448, 448, 3))],
@@ -289,15 +304,16 @@ for itr in range(args.max_iteration):
             prepare_data(valid_input_images_in_seqs, valid_annotations_in_seqs, mean_frame)
     
         #do testing
-        losses = model.test_on_batch([x_cropped, x_full, x_last_bigger], [y_cropped, y_full])
+        loss = model.test_on_batch([x_cropped, x_full, x_last_bigger], [y_cropped, y_full])[0]
         res = model.predict_on_batch([x_cropped, x_full, x_last_bigger])
         valid_pred_images = y2img(res[1])
-        valid_gazemaps = y2img(valid_annotations_in_seqs.reshape(-1, 448*448))
+        #valid_gazemaps = y2img(valid_annotations_in_seqs.reshape(-1, 448*448))
+        valid_gazemaps = y2img(y_full)
         
         feed_dict = {
-            validation_loss: np.mean(losses),
-            input_images: [cv2.resize(img, args.display_size[::-1]) for img in train_input_images_in_seqs.reshape((-1, 448, 448, 3))],
-            pred_images: train_pred_images,
+            validation_loss: loss,
+            input_images: [cv2.resize(img, args.display_size[::-1]) for img in valid_input_images_in_seqs.reshape((-1, 448, 448, 3))],
+            pred_images: valid_pred_images,
             gazemaps: valid_gazemaps
         }
         
@@ -305,9 +321,14 @@ for itr in range(args.max_iteration):
                                feed_dict=feed_dict)
                                
         summary_writer.add_summary(summary_str, itr)
-        print("%s ---> Validation_loss: %g" % (datetime.datetime.now(), np.mean(losses)))
+        print("%s ---> Validation_loss: %g" % (datetime.datetime.now(), loss))
         
         model.save_weights(args.logs_dir+'weights_iter_%d.h5' % (itr,))
+        
+    #pdb.set_trace()
+    
+    
+    
         
 
 
