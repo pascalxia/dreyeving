@@ -45,3 +45,22 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+.Rproj.user
+
+out/*
+weights/*
+out0
+out2
+out_dreyeving
+out_tf
+out_for_bdd
+out_for_bdd_temp
+logs
+data_temp
+.RData
+.Rhistory
+*.Rproj
+.ipynb_checkpoints
+__pycache__
+core
+*.pyc
