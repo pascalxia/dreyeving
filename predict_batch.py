@@ -39,8 +39,9 @@ args.epsilon = 1e-12
 args.image_size = (448, 448)
 args.gaze_map_size = (448, 448)
 args.display_size = (252, 448)
-args.mean_frame_path = args.data_dir + 'training/camera_images/mean_frame/mean_camera_image.jpg'
-args.output_map_size = (36, 64)
+args.mean_frame_path = args.data_dir + 'training/camera_images/mean_frame/mean_camera_image_bdd.jpg'
+#args.output_map_size = (36, 64)
+args.output_map_size = (252, 448)
 
 
 #set up session------------------
