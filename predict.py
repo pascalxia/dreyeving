@@ -4,8 +4,8 @@ import os
 
 if __name__ == '__main__':
 
-    output_dir_root = 'out'
-    weights_file = 'weights/model_weights.h5'
+    output_dir_root = 'out_tf'
+    weights_file = 'weights/model_weights_tf.h5'
     dreyeve_data_dir = 'data_sample/54'
 
     # load model for prediction
