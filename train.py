@@ -55,21 +55,41 @@ K.set_session(sess)
 
 #set up readout net-----------------
 model = getCoarse2FineModel(summary=True)
+
+#try to reload weights--------------------
+if args.model_dir is not None:
+    weight_path = args.model_dir + 'weights_iter_' + args.model_iteration + '.h5'
+    model.load_weights(weight_path)
+    print("Model restored...")
+
+#add conv1*1 at the end
+from keras.layers.convolutional import Conv2D
+from keras.models import Model
+from keras.layers.core import Reshape
+from keras.layers import Flatten
+
+full_top = Conv2D(filters=1, kernel_size=1, kernel_initializer='ones', activation='relu', name='full_top')
+cropped_top = Conv2D(filters=1, kernel_size=1, kernel_initializer='ones', activation='relu', name='cropped_top')
+
+#pdb.set_trace()
+cropped_output = Flatten(name='cropped_top_output')(cropped_top(Reshape((112,112,1))(model.outputs[0])))
+full_fine_output = Flatten(name='full_top_output')(full_top(Reshape((448, 448, 1))(model.outputs[1])))
+revised_model = Model(input=model.input,
+                      output=[cropped_output, full_fine_output])
+model = revised_model
+
+
 opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 model.compile(optimizer=opt,
-              loss={'cropped_output': 'mse', 'full_fine_output': 'mse'},
-              loss_weights={'cropped_output': 1.0, 'full_fine_output': 1.0})
+              loss={'cropped_top_output': 'mse', 'full_top_output': 'mse'},
+              loss_weights={'cropped_top_output': 0.0, 'full_top_output': 1.0})
               
 if not os.path.isdir(args.logs_dir):
   os.makedirs(args.logs_dir)
 model.save(args.logs_dir+'dreyeving_tf.h5')
 
     
-#try to reload weights--------------------
-if args.model_dir is not None:
-    weight_path = args.model_dir + 'weights_iter_' + args.model_iteration + '.h5'
-    model.load_weights(weight_path)
-    print("Model restored...")
+
     
 
 #set up summaries----------
@@ -77,6 +97,17 @@ if args.model_dir is not None:
 quick_summaries = []
 training_loss = tf.placeholder(tf.float32, shape=(), name='training_loss')
 quick_summaries.append(tf.summary.scalar("training_loss", training_loss))
+#addtional summaries for the revised model
+cropped_top_kernel_plh = tf.placeholder(tf.float32, shape=(), name='cropped_top_kernel')
+cropped_top_bias_plh = tf.placeholder(tf.float32, shape=(), name='cropped_top_bias')
+full_top_kernel_plh = tf.placeholder(tf.float32, shape=(), name='full_top_kernel')
+full_top_bias_plh = tf.placeholder(tf.float32, shape=(), name='full_top_bias')
+
+quick_summaries.append(tf.summary.scalar("cropped_top_kernel", cropped_top_kernel_plh))
+quick_summaries.append(tf.summary.scalar("cropped_top_bias", cropped_top_bias_plh))
+quick_summaries.append(tf.summary.scalar("full_top_kernel", full_top_kernel_plh))
+quick_summaries.append(tf.summary.scalar("full_top_bias", full_top_bias_plh))
+
 quick_summary_op = tf.summary.merge(quick_summaries)
 
 
@@ -267,11 +298,20 @@ for itr in range(args.max_iteration):
     
     #do one step training
     loss = model.train_on_batch([x_cropped, x_full, x_last_bigger], [y_cropped, y_full])[0]
+
+    full_kernel = full_top.get_weights()[0].flatten()[0]
+    full_bias = full_top.get_weights()[1][0]
+    cropped_kernel = cropped_top.get_weights()[0].flatten()[0]
+    cropped_bias = cropped_top.get_weights()[1][0]
     
     
     #do summaries
     if itr % args.quick_summary_period == 0:
-        feed_dict = {training_loss: loss}
+        feed_dict = {training_loss: loss,
+                     cropped_top_kernel_plh: cropped_kernel,
+                     cropped_top_bias_plh: cropped_bias,
+                     full_top_kernel_plh: full_kernel,
+                     full_top_bias_plh: full_bias}
         summary_str = sess.run(quick_summary_op,
                                feed_dict=feed_dict)
         summary_writer.add_summary(summary_str, itr)

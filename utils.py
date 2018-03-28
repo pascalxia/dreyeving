@@ -11,7 +11,6 @@ import sys
 import cv2
 import numpy as np
 from tqdm import tqdm
-import pdb
 from collections import deque
 
 # parameters (no need to edit)
