@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from keras.layers import Input, Flatten, merge
 from keras.models import Model, Sequential
 from keras.layers.normalization import BatchNormalization
@@ -90,7 +92,7 @@ def getCoarse2FineModel(summary=True):
                         output=[cropped_output, full_fine_output])
 
     if summary:
-        print final_model.summary()
+        print(final_model.summary())
 
     return final_model
 
@@ -105,7 +107,7 @@ def predict_video(model, folder_in, output_path, mean_frame_path):
     for frame_name in frame_list:
         frame = cv2.imread(join(folder_in, frame_name))
         frames.append(frame.astype(np.float32) - mean_frame)
-    print 'Done loading frames.'
+    print('Done loading frames.')
     
     # start of prediction
     for i in tqdm(range(t, len(frames))):
