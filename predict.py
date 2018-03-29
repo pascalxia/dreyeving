@@ -1,4 +1,4 @@
-from utils import getCoarse2FineModel, predict_video
+from utils_tf import getCoarse2FineModel, predict_video
 from keras.optimizers import Adam
 import os
 
