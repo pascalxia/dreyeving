@@ -110,6 +110,10 @@ def predict_video(model, folder_in, output_path, mean_frame_path):
         frames.append(frame.astype(np.float32) - mean_frame)
     print('Done loading frames.')
     
+    # prepare output folder
+    if not os.path.isdir(output_path):
+        os.makedirs(output_path)
+    
     # start of prediction
     for i in tqdm(range(t, len(frames))):
         
