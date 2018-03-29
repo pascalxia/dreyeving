@@ -99,6 +99,7 @@ def predict_video(model, folder_in, output_path, mean_frame_path):
     # load frames to predict
     frames = []
     frame_list = os.listdir(folder_in)
+    frame_list.sort()
     mean_frame = cv2.imread(mean_frame_path)
     for frame_name in frame_list:
         frame = cv2.imread(join(folder_in, frame_name))
